@@ -1,8 +1,8 @@
-#Tugas Implementasi API
+# Tugas Implementasi API
 Mata Kuliah Teknologi Sistem Terintegrasi
 <br>Author: Vincent / 18217042
 
-#Gambaran Umum _Interface_
+# Gambaran Umum _Interface_
 API yang akan dibuat adalah API yang memberikan layanan 
 <br>pencatatan pengiriman barang logistic yang terintegrasi 
 <br>secara real time dengan 3 buah perusahaan pengiriman 
@@ -10,7 +10,7 @@ API yang akan dibuat adalah API yang memberikan layanan
 <br>API ini akan melayani pengecekan ongkos pengiriman barang, 
 <br>serta pencatatan data pengiriman barang.
 
-#Penggunaan
+# Penggunaan
 Ubah konfigurasi database mysql Anda pada:<br>
 ~~~
 app.config['MYSQL_DATABASE_USER'] = '{username Anda}'
