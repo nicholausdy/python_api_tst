@@ -1,7 +1,6 @@
 import pymysql
-from flask import jsonify
 from flaskext.mysql import MySQL
-from flask import request, Flask
+from flask import request, Flask, jsonify
 import requests
 import json
 import http.client
@@ -19,6 +18,13 @@ app.config['MYSQL_DATABASE_DB'] = 'test'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 mysql.init_app(app)
+
+
+def random_id():
+    res = ""
+    for i in range(15):
+        res = res+str(random.randrange(0, 9))
+    return res
 
 
 def get_place(cat, id):
@@ -40,12 +46,8 @@ def get_place(cat, id):
         else:
             return res.json()['rajaongkir']
     except Exception as e:
-        res = {
-            'description': e,
-            'message': "Hasil tidak ditemukan",
-            'status': 201
-        }
-        return json.dumps(res)
+        res = "not found"
+        return res
 
 
 def get_cost(origin, destination, weight, courier):
@@ -66,12 +68,8 @@ def get_cost(origin, destination, weight, courier):
 
         return json.loads(data)['rajaongkir']['results'][0]['costs'][0]['cost'][0]['value']
     except Exception as e:
-        res = {
-            'description': e,
-            'message': "Hasil tidak ditemukan",
-            'status': 201
-        }
-        return json.dumps(res)
+        res = "not found"
+        return res
 
 
 @app.route('/api/order', methods=['GET', 'POST'])
@@ -92,39 +90,53 @@ def index():
         try:
             conn = mysql.connect()
             cursor = conn.cursor()
-            _id = random.randrange(00000000, 99999999)
-            _name = request.args.get('name')
-            _origin = get_place('city', request.args.get('origin'))
-            _destination = get_place('city', request.args.get('destination'))
-            _goods = request.args.get('goods')
+
             _weight = request.args.get('weight')
             _courier = request.args.get('courier')
             _cost = get_cost(str(request.args.get('origin')), str(request.args.get('destination')), str(_weight),
                              _courier)
-            _status = "packing"
-            _date = date.today().strftime("%d/%m %Y")
-            _updatedDate = date.today().strftime("%d/%m/%Y")
+            _origin = get_place('city', request.args.get('origin'))
+            _destination = get_place('city', request.args.get('destination'))
+            if _cost != "not found" and _origin != "not found" and _destination != "not found":
+                _id = random_id()
+                _name = request.args.get('name')
+                _goods = request.args.get('goods')
+                _status = "packing"
+                _date = date.today().strftime("%d/%m %Y")
+                _updatedDate = date.today().strftime("%d/%m/%Y")
 
-            sql = """INSERT INTO orders(id, name, origin, destination, goods, weight, cost, courier, status, date, updatedDate) 
-                     VALUES (%s, %s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
-            data = (_id, _name, _origin, _destination, _goods, str(_weight), _cost, _courier, _status, _date,
-                    _updatedDate)
-            cursor.execute(sql, data)
-            conn.commit()
-            res = {
-                'message': 'Success',
-                'data': {
-                    'id': _id,
-                    'name': _name,
-                    'origin': _origin,
-                    'destination': _destination,
-                    'goods': _goods,
-                    'cost': _cost,
-                    'courier': _courier,
-                    'status': _status,
-                    'date': _date,
+                sql = """INSERT INTO orders(id, name, origin, destination, goods, weight, cost, courier, status, date, updatedDate) 
+                         VALUES (%s, %s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+                data = (_id, _name, _origin, _destination, _goods, str(_weight), _cost, _courier, _status, _date,
+                        _updatedDate)
+                cursor.execute(sql, data)
+                conn.commit()
+                res = {
+                    'message': 'Success',
+                    'data': {
+                        'id': _id,
+                        'name': _name,
+                        'origin': _origin,
+                        'destination': _destination,
+                        'goods': _goods,
+                        'cost': _cost,
+                        'courier': _courier,
+                        'status': _status,
+                        'date': _date,
+                    }
                 }
-            }
+            else:
+                notfound = []
+                if _origin == "not found":
+                    notfound.append("Origin")
+                if _destination == "not found":
+                    notfound.append("Destination")
+                if _cost == "not found" and _origin != "not found" and _destination != "not found":
+                    notfound.append("Courier")
+                res = {
+                    'message': 'Data Tidak Ditemukan, Periksa Kembali Parameter',
+                    'null': notfound
+                }
         except Exception as e:
             return e
         finally:
@@ -138,35 +150,64 @@ def index():
     return jsonify({'result': res})
 
 
-@app.route('/api/update/<string:attr>', methods=['PUT'])
-def update(attr):
+@app.route('/api/order', methods=['PUT'])
+def update():
     global cursor, conn
-    _id = request.args.get('id')
-    _data = request.args.get(attr)
-    _updatedDate = date.today().strftime("%d/%m/%y")
+    try:
+        conn = mysql.connect()
+        cursor = conn.cursor()
 
-    sql = "UPDATE orders SET "+attr+"=%s, updatedDate=%s WHERE id=%s"
-    data = (_data, _updatedDate, _id)
-    conn = mysql.connect()
-    cursor = conn.cursor()
-    cursor.execute(sql, data)
-    conn.commit()
-    res = [{
-        'status': 200,
-        'message': 'Success Update',
-        'data': {
-            'id': _id,
-            attr: _data,
-            'updatedDate': _updatedDate
-        }
-    }]
-    cursor.close()
-    conn.close()
+        _weight = request.args.get('weight')
+        _courier = request.args.get('courier')
+        _cost = get_cost(str(request.args.get('origin')), str(request.args.get('destination')), str(_weight),
+                         _courier)
+        _origin = get_place('city', request.args.get('origin'))
+        _destination = get_place('city', request.args.get('destination'))
+        if _cost != "not found" and _origin != "not found" and _destination != "not found":
+            _id = request.args.get('id')
+            _name = request.args.get('name')
+            _goods = request.args.get('goods')
+            _updatedDate = date.today().strftime("%d/%m/%Y")
+
+            sql = """UPDATE orders SET name=%s, origin=%s, destination=%s, goods=%s, 
+                            weight=%s, cost=%s, courier=%s, updatedDate=%s WHERE id=%s"""
+            data = (_name, _origin, _destination, _goods, str(_weight), _cost, _courier, _updatedDate, _id)
+            cursor.execute(sql, data)
+            conn.commit()
+            res = {
+                'message': 'Success',
+                'data': {
+                    'id': _id,
+                    'name': _name,
+                    'origin': _origin,
+                    'destination': _destination,
+                    'goods': _goods,
+                    'cost': _cost,
+                    'courier': _courier,
+                    'updatedDate': _updatedDate,
+                }
+            }
+        else:
+            notfound = []
+            if _origin == "not found":
+                notfound.append("Origin")
+            if _destination == "not found":
+                notfound.append("Destination")
+            if _cost == "not found" and _origin != "not found" and _destination != "not found":
+                notfound.append("Courier")
+            res = {
+                'message': 'Data Tidak Ditemukan, Periksa Kembali Parameter',
+                'null': notfound
+            }
+    except Exception as e:
+        return e
+    finally:
+        cursor.close()
+        conn.close()
     return jsonify({'result': res})
 
 
-
-@app.route('/api/delete', methods=['DELETE'])
+@app.route('/api/order', methods=['DELETE'])
 def delete():
     global cursor, conn
     try:
