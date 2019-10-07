@@ -12,9 +12,9 @@ mysql = MySQL()
 app.config['DEBUG'] = True
 
 # MySQL configurations
-app.config['MYSQL_DATABASE_USER'] = ''
+app.config['MYSQL_DATABASE_USER'] = 'root'
 app.config['MYSQL_DATABASE_PASSWORD'] = ''
-app.config['MYSQL_DATABASE_DB'] = ''
+app.config['MYSQL_DATABASE_DB'] = 'test'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 mysql.init_app(app)
@@ -229,6 +229,36 @@ def delete():
         conn.close()
 
 
+@app.route('/api/cost', methods=['POST'])
+def get():
+    try:
+        conn = http.client.HTTPSConnection("api.rajaongkir.com")
+
+
+        payload = "origin=" + request.args.get('origin') + \
+                  "&destination=" + request.args.get('destination') + \
+                  "&weight=" + request.args.get('weight') + \
+                  "&courier=" + request.args.get('courier')
+
+        headers = {
+            'key': "8673346f00df697bd0b951de5f847598",
+            'content-type': "application/x-www-form-urlencoded"
+        }
+
+        conn.request("POST", "/starter/cost", payload, headers)
+
+        res = conn.getresponse()
+        data = res.read()
+
+        return json.loads(data)['rajaongkir']
+    except Exception as e:
+        res = {
+            'message': "Data tidak ditemukan, periksa kembali parameter",
+            'status': 404
+        }
+        return jsonify(res)
+
+
 @app.errorhandler(404)
 def not_found(error=None):
     message = {
@@ -237,6 +267,18 @@ def not_found(error=None):
     }
     resp = jsonify(message)
     resp.status_code = 404
+
+    return resp
+
+
+@app.errorhandler(405)
+def not_found(error=None):
+    message = {
+        'status': 405,
+        'message': 'Method ' + request.method + ' is not allowed',
+    }
+    resp = jsonify(message)
+    resp.status_code = 405
 
     return resp
 
