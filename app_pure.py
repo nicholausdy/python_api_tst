@@ -100,61 +100,86 @@ class myHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
-            parsed_url = urlparse(self.path).query
-            query = parse_qs(parsed_url)
-            data = json.dumps(query)
-            cursor = mydb.cursor()
-            _courier = data.split('"courier": ["')[1].split('"]')[0]
-            _weight = data.split('"weight": ["')[1].split('"]')[0]
-            _cost = get_cost(str(data.split('"origin": ["')[1].split('"]')[0]), str(data.split('"destination": ["')[1].split('"]')[0]), str(_weight),
-                             _courier)
-            _origin = get_place('city', data.split('"origin": ["')[1].split('"]')[0])
-            _destination = get_place('city', data.split('"destination": ["')[1].split('"]')[0])
-            if _cost != "not found" and _origin != "not found" and _destination != "not found":
-                _id = random_id()
-                _name = data.split('"name": ["')[1].split('"]')[0]
-                _goods = data.split('"goods": ["')[1].split('"]')[0]
-                _status = "packing"
-                _date = date.today().strftime("%d/%m %Y")
-                _updatedDate = date.today().strftime("%d/%m/%Y")
+			if (self.path != "/getcost"):
+				parsed_url = urlparse(self.path).query
+				query = parse_qs(parsed_url)
+				data = json.dumps(query)
+				cursor = mydb.cursor()
+				_courier = data.split('"courier": ["')[1].split('"]')[0]
+				_weight = data.split('"weight": ["')[1].split('"]')[0]
+				_cost = get_cost(str(data.split('"origin": ["')[1].split('"]')[0]), str(data.split('"destination": ["')[1].split('"]')[0]), str(_weight),
+								 _courier)
+				_origin = get_place('city', data.split('"origin": ["')[1].split('"]')[0])
+				_destination = get_place('city', data.split('"destination": ["')[1].split('"]')[0])
+				if _cost != "not found" and _origin != "not found" and _destination != "not found":
+					_id = random_id()
+					_name = data.split('"name": ["')[1].split('"]')[0]
+					_goods = data.split('"goods": ["')[1].split('"]')[0]
+					_status = "packing"
+					_date = date.today().strftime("%d/%m %Y")
+					_updatedDate = date.today().strftime("%d/%m/%Y")
 
-                sql = """INSERT INTO orders(id, name, origin, destination, goods, weight, cost, courier, status,
-                date, updatedDate) VALUES (%s, %s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
-                data = (_id, _name, _origin, _destination, _goods, str(_weight), _cost, _courier, _status, _date,
-                        _updatedDate)
-                cursor.execute(sql, data)
-                mydb.commit()
-                res = {
-                    'message': 'Success Add Data',
-                    'data': {
-                        'id': _id,
-                        'name': _name,
-                        'origin': _origin,
-                        'destination': _destination,
-                        'goods': _goods,
-                        'cost': _cost,
-                        'courier': _courier,
-                        'status': _status,
-                        'date': _date,
-                    }
-                }
-            else:
-                notfound = []
-                if _origin == "not found":
-                    notfound.append("Origin")
-                if _destination == "not found":
-                    notfound.append("Destination")
-                if _cost == "not found" and _origin != "not found" and _destination != "not found":
-                    notfound.append("Courier")
-                res = {
-                    'message': 'Data Tidak Ditemukan, Periksa Kembali Parameter',
-                    'null': notfound
-                }
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(bytes(json.dumps(res).encode('utf-8')))
-            return
+					sql = """INSERT INTO orders(id, name, origin, destination, goods, weight, cost, courier, status,
+					date, updatedDate) VALUES (%s, %s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+					data = (_id, _name, _origin, _destination, _goods, str(_weight), _cost, _courier, _status, _date,
+							_updatedDate)
+					cursor.execute(sql, data)
+					mydb.commit()
+					res = {
+						'message': 'Success Add Data',
+						'data': {
+							'id': _id,
+							'name': _name,
+							'origin': _origin,
+							'destination': _destination,
+							'goods': _goods,
+							'cost': _cost,
+							'courier': _courier,
+							'status': _status,
+							'date': _date,
+						}
+					}
+				else:
+					notfound = []
+					if _origin == "not found":
+						notfound.append("Origin")
+					if _destination == "not found":
+						notfound.append("Destination")
+					if _cost == "not found" and _origin != "not found" and _destination != "not found":
+						notfound.append("Courier")
+					res = {
+						'message': 'Data Tidak Ditemukan, Periksa Kembali Parameter',
+						'null': notfound
+					}
+				self.send_response(200)
+				self.send_header('Content-type', 'application/json')
+				self.end_headers()
+				self.wfile.write(bytes(json.dumps(res).encode('utf-8')))
+				return
+			else:
+				parsed_url = urlparse(self.path).query
+				query = parse_qs(parsed_url)
+				data = json.dumps(query)
+				
+				conn = http.client.HTTPSConnection("api.rajaongkir.com")
+
+
+				payload = "origin=" + data.split('"origin": ["')[1].split('"]')[0] + \
+						  "&destination=" + data.split('"destination": ["')[1].split('"]')[0] + \
+						  "&weight=" + data.split('"weight": ["')[1].split('"]')[0] + \
+						  "&courier=" + data.split('"courier": ["')[1].split('"]')[0]
+
+				headers = {
+					'key': "8673346f00df697bd0b951de5f847598",
+					'content-type': "application/x-www-form-urlencoded"
+				}
+
+				conn.request("POST", "/starter/cost", payload, headers)
+
+				res = conn.getresponse()
+				data = res.read()
+
+				return json.loads(data)['rajaongkir']
         except Exception as e:
             return e
 
