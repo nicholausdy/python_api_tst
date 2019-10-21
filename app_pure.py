@@ -7,7 +7,6 @@ from datetime import date
 import random
 from urllib.parse import urlparse, parse_qs
 
-PORT_NUMBER = 8080
 mydb = mysql.connector.connect(
   host="localhost",
   user="root",
