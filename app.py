@@ -15,7 +15,8 @@ app.config['DEBUG'] = True
 app.config['MYSQL_DATABASE_USER'] = 'root'
 app.config['MYSQL_DATABASE_PASSWORD'] = ''
 app.config['MYSQL_DATABASE_DB'] = 'test'
-app.config['MYSQL_DATABASE_HOST'] = 'localhost'
+app.config['MYSQL_DATABASE_HOST'] = '0.0.0.0'
+app.config['MYSQL_DATABASE_PORT'] = 3306
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 mysql.init_app(app)
 
@@ -76,16 +77,16 @@ def get_cost(origin, destination, weight, courier):
 def index():
     global cursor, conn
     if request.method == 'GET':
+        conn = mysql.connect()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
         try:
-            conn = mysql.connect()
-            cursor = conn.cursor(pymysql.cursors.DictCursor)
             cursor.execute("SELECT * FROM orders")
             res = cursor.fetchall()
-            cursor.close()
-            conn.close()
         except Exception as e:
             return e
-            
+        finally:
+            cursor.close()
+            conn.close()
     elif request.method == 'POST':
         try:
             conn = mysql.connect()
@@ -137,10 +138,11 @@ def index():
                     'message': 'Data Tidak Ditemukan, Periksa Kembali Parameter',
                     'null': notfound
                 }
-            cursor.close()
-            conn.close()
         except Exception as e:
             return e
+        finally:
+            cursor.close()
+            conn.close()
     else:
         res = [{
             'status': 201,
@@ -198,10 +200,11 @@ def update():
                 'message': 'Data Tidak Ditemukan, Periksa Kembali Parameter',
                 'null': notfound
             }
-        cursor.close()
-        conn.close()
     except Exception as e:
         return e
+    finally:
+        cursor.close()
+        conn.close()
     return jsonify({'result': res})
 
 
@@ -220,10 +223,11 @@ def delete():
             'message': "Success Delete"
         }]
         return jsonify(res)
-        cursor.close()
-        conn.close()
     except Exception as e:
         return e
+    finally:
+        cursor.close()
+        conn.close()
 
 
 @app.route('/api/cost', methods=['POST'])
@@ -246,7 +250,6 @@ def get():
 
         res = conn.getresponse()
         data = res.read()
-
         return json.loads(data)['rajaongkir']
     except Exception as e:
         res = {
