@@ -81,11 +81,11 @@ def index():
             cursor = conn.cursor(pymysql.cursors.DictCursor)
             cursor.execute("SELECT * FROM orders")
             res = cursor.fetchall()
-        except Exception as e:
-            return e
-        finally:
             cursor.close()
             conn.close()
+        except Exception as e:
+            return e
+            
     elif request.method == 'POST':
         try:
             conn = mysql.connect()
@@ -137,11 +137,10 @@ def index():
                     'message': 'Data Tidak Ditemukan, Periksa Kembali Parameter',
                     'null': notfound
                 }
-        except Exception as e:
-            return e
-        finally:
             cursor.close()
             conn.close()
+        except Exception as e:
+            return e
     else:
         res = [{
             'status': 201,
@@ -199,11 +198,10 @@ def update():
                 'message': 'Data Tidak Ditemukan, Periksa Kembali Parameter',
                 'null': notfound
             }
-    except Exception as e:
-        return e
-    finally:
         cursor.close()
         conn.close()
+    except Exception as e:
+        return e
     return jsonify({'result': res})
 
 
@@ -222,11 +220,10 @@ def delete():
             'message': "Success Delete"
         }]
         return jsonify(res)
-    except Exception as e:
-        return e
-    finally:
         cursor.close()
         conn.close()
+    except Exception as e:
+        return e
 
 
 @app.route('/api/cost', methods=['POST'])
