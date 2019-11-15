@@ -8,7 +8,7 @@ import random
 from urllib.parse import urlparse, parse_qs
 
 mydb = mysql.connector.connect(
-  host="localhost",
+  host="0.0.0.0",
   user="root",
   passwd="",
   database="test"
